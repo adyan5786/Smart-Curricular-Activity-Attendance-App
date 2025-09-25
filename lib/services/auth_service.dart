@@ -53,4 +53,42 @@ class AuthService {
       // The UI can use this to inform the user if the email doesn't exist.
     }
   }
+
+  /// Registers a new user with email and password, then saves their details to Firestore.
+  /// Returns a Firebase User object on success, or null on failure.
+  Future<User?> signUpWithEmail(String email, String password, String name, String role) async {
+    try {
+      // Step 1: Create the user in Firebase Authentication.
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Step 2: If the user is created successfully, save their details in a new Firestore document.
+        // The document ID will be the user's unique ID (uid) from Firebase Auth.
+        await _firestore.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'email': email,
+          'name': name,
+          'role': role,
+          'createdAt': Timestamp.now(), // Good practice to store a timestamp.
+        });
+
+        // Return the user object to confirm successful registration.
+        return user;
+      }
+      return null;
+    } on FirebaseAuthException catch (e) {
+      // Handle specific Firebase errors, like if the email is already in use.
+      // This allows the UI to show a helpful message to the user.
+      print('Firebase Auth Exception during sign-up: ${e.message}');
+      return null;
+    } catch (e) {
+      // Catch any other unexpected errors.
+      print('An unexpected error occurred during sign-up: $e');
+      return null;
+    }
+  }
 }
