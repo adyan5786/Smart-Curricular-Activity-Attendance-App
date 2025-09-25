@@ -1,10 +1,14 @@
 // lib/services/auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// A stream that notifies the app about changes in the user's authentication state.
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   /// Signs in a user with email and password and then verifies their role from Firestore.
   /// Returns a Firebase User object on complete success, or null on any failure.
@@ -41,16 +45,6 @@ class AuthService {
       // A general catch block for any other unexpected errors (e.g., network issues).
       print('An unexpected error occurred: $e');
       return null;
-    }
-  }
-
-  /// Sends a password reset email using Firebase's built-in service.
-  Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
-    } on FirebaseAuthException catch (e) {
-      print('Password reset error: ${e.message}');
-      // The UI can use this to inform the user if the email doesn't exist.
     }
   }
 
@@ -91,4 +85,47 @@ class AuthService {
       return null;
     }
   }
+
+  /// Fetches the details of the currently authenticated user from Firestore.
+  /// Returns an AppUser object if found, otherwise null.
+  Future<AppUser?> getCurrentUserDetails() async {
+    User? firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) {
+      // No one is logged in.
+      return null;
+    }
+
+    try {
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      if (userDoc.exists) {
+        // Create an AppUser object from the Firestore data.
+        return AppUser(
+          uid: userDoc.get('uid'),
+          email: userDoc.get('email'),
+          name: userDoc.get('name'),
+          role: userDoc.get('role'),
+        );
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching user details: $e');
+      return null;
+    }
+  }
+
+  /// Sends a password reset email using Firebase's built-in service.
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      print('Password reset error: ${e.message}');
+      // The UI can use this to inform the user if the email doesn't exist.
+    }
+  }
+
+  /// Signs the current user out.
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
 }
+
