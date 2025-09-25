@@ -1,3 +1,4 @@
+import 'package:smart_curricular_activity_attendance_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -10,6 +11,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   // A key to identify and validate our Form
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
 
   // Controllers to manage the text input for email and password
   final TextEditingController _emailController = TextEditingController();
@@ -31,29 +33,28 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // Dummy login function for UI development
-  void _login() {
-    // Validate the form first
+  void _login() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() { _isLoading = true; });
 
-      // Simulate a network call
-      Future.delayed(const Duration(seconds: 2), () {
-        // Print the captured data
-        print('Email: ${_emailController.text}');
-        print('Password: ${_passwordController.text}');
-        print('Role: $_selectedRole');
+      final user = await _authService.signInWithEmail(
+        _emailController.text,
+        _passwordController.text,
+        _selectedRole,
+      );
 
-        setState(() {
-          _isLoading = false;
-        });
+      setState(() { _isLoading = false; });
 
-        // Show a success message (for UI testing)
+      if (user != null) {
+        // Successful login! Navigate to the home screen.
+        // Navigator.of(context).pushReplacement(...);
+        print('Login successful for user: ${user.uid}');
+      } else {
+        // Failed login. Show an error message.
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dummy Login Successful!')),
+          const SnackBar(content: Text('Login Failed. Please check your credentials and role.')),
         );
-      });
+      }
     }
   }
 
