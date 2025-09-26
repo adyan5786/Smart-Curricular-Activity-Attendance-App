@@ -2,6 +2,10 @@ import 'package:smart_curricular_activity_attendance_app/services/auth_service.d
 import 'package:flutter/material.dart';
 import 'package:smart_curricular_activity_attendance_app/screens/signup_screen.dart';
 import 'package:smart_curricular_activity_attendance_app/screens/forgot_password_screen.dart';
+import 'package:smart_curricular_activity_attendance_app/screens/student_dashboard_screen.dart';
+import 'package:smart_curricular_activity_attendance_app/screens/lecturer_dashboard_screen.dart';
+import 'package:smart_curricular_activity_attendance_app/screens/admin_dashboard_screen.dart';
+import 'package:smart_curricular_activity_attendance_app/models/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -42,7 +46,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user != null) {
         print('Login successful for user: ${user.uid}');
-        // TODO: Navigate to home screen
+        // Fetch user details from Firestore (including role)
+        final userDetails = await _authService.getCurrentUserDetails();
+
+        if (userDetails != null && mounted) {
+          Widget dashboard;
+          switch (userDetails.role) {
+            case 'Student':
+              dashboard = StudentDashboardScreen(user: userDetails);
+              break;
+            case 'Lecturer':
+              dashboard = LecturerDashboardScreen(  user: userDetails);
+              break;
+            case 'Admin':
+              dashboard = const AdminDashboardScreen();
+              break;
+            default:
+              dashboard = const Scaffold(body: Center(child: Text('Unknown user role')));
+          }
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => dashboard),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login Failed. Please check your credentials and role.')),
