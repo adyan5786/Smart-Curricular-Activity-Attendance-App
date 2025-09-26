@@ -16,10 +16,8 @@ class AttendanceRecord {
     required this.status,
   });
 
-  // While we are mostly writing data with this model, having a
-  // fromFirestore factory is good practice for potential future features.
   factory AttendanceRecord.fromFirestore(DocumentSnapshot doc) {
-    Map data = doc.data() as Map<String, dynamic>;
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return AttendanceRecord(
       id: doc.id,
       sessionId: data['sessionId'] ?? '',
@@ -29,3 +27,4 @@ class AttendanceRecord {
     );
   }
 }
+
