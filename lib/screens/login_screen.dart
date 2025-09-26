@@ -5,7 +5,6 @@ import 'package:smart_curricular_activity_attendance_app/screens/forgot_password
 import 'package:smart_curricular_activity_attendance_app/screens/student_dashboard_screen.dart';
 import 'package:smart_curricular_activity_attendance_app/screens/lecturer_dashboard_screen.dart';
 import 'package:smart_curricular_activity_attendance_app/screens/admin_dashboard_screen.dart';
-import 'package:smart_curricular_activity_attendance_app/models/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -110,102 +109,110 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Form(
                   key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(height: screenHeight * 0.04),
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email),
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                            return 'Please enter a valid email address';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: screenHeight * 0.025),
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock),
-                          border: OutlineInputBorder(),
-                        ),
-                        obscureText: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: screenHeight * 0.025),
-                      DropdownButtonFormField<String>(
-                        initialValue: _selectedRole,
-                        decoration: const InputDecoration(
-                          labelText: 'Role',
-                          prefixIcon: Icon(Icons.person_search),
-                          border: OutlineInputBorder(),
-                        ),
-                        items: _roles.map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedRole = newValue!;
-                          });
-                        },
-                      ),
-                      SizedBox(height: screenHeight * 0.04),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 48), // full width, good touch target
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
+                  // STEP 1: Wrap the Column with AutofillGroup
+                  child: AutofillGroup(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: screenHeight * 0.04),
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email),
+                            border: OutlineInputBorder(),
                           ),
+                          keyboardType: TextInputType.emailAddress,
+                          // STEP 2: Add autofill hints for email
+                          autofillHints: const [AutofillHints.email],
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
+                              return 'Please enter a valid email address';
+                            }
+                            return null;
+                          },
                         ),
-                        onPressed: _isLoading ? null : _login,
-                        child: _isLoading
-                            ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            strokeWidth: 2.5,
+                        SizedBox(height: screenHeight * 0.025),
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: const InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: Icon(Icons.lock),
+                            border: OutlineInputBorder(),
                           ),
-                        )
-                            : const Text('Login', style: TextStyle(fontSize: 16)),
-                      ),
-                      SizedBox(height: screenHeight * 0.015),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextButton(
-                            onPressed: _forgotPassword,
-                            child: const Text('Forgot Password?'),
+                          obscureText: true,
+                          // STEP 3: Add autofill hints and onEditingComplete for password
+                          autofillHints: const [AutofillHints.password],
+                          onEditingComplete: _login,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: screenHeight * 0.025),
+                        DropdownButtonFormField<String>(
+                          initialValue: _selectedRole,
+                          decoration: const InputDecoration(
+                            labelText: 'Role',
+                            prefixIcon: Icon(Icons.person_search),
+                            border: OutlineInputBorder(),
                           ),
-                          TextButton(
-                            onPressed: _goToSignUp,
-                            child: const Text('Sign Up'),
+                          items: _roles.map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedRole = newValue!;
+                            });
+                          },
+                        ),
+                        SizedBox(height: screenHeight * 0.04),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: Size(double.infinity, 48), // full width, good touch target
+                            backgroundColor: Colors.blueAccent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: screenHeight * 0.02),
-                    ],
+                          onPressed: _isLoading ? null : _login,
+                          child: _isLoading
+                              ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                              : const Text('Login', style: TextStyle(fontSize: 16)),
+                        ),
+                        SizedBox(height: screenHeight * 0.015),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton(
+                              onPressed: _forgotPassword,
+                              child: const Text('Forgot Password?'),
+                            ),
+                            TextButton(
+                              onPressed: _goToSignUp,
+                              child: const Text('Sign Up'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: screenHeight * 0.02),
+                      ],
+                    ),
                   ),
                 ),
               ),
