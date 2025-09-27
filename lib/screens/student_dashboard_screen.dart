@@ -1,9 +1,11 @@
-// lib/screens/student_dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert'; // <-- Needed for jsonDecode
 import '../models/user_model.dart';
 import '../models/attendance_record_model.dart';
 import '../services/auth_service.dart';
+import 'student_qr_scanner_screen.dart';
+import '../services/attendance_service.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
   final AppUser user;
@@ -19,6 +21,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   List<AttendanceRecord> _recentRecords = [];
   bool _loading = true;
   String? _error;
+  bool _isMarkingAttendance = false; // <-- Move here
 
   @override
   void initState() {
@@ -27,7 +30,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   }
 
   Future<void> _fetchDashboardData() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       // Attendance records for this user (Student)
       final attendanceSnapshots = await FirebaseFirestore.instance
@@ -45,10 +51,103 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       _activityCount = records.map((r) => r.sessionId).toSet().length;
       _recentRecords = records;
 
-      setState(() { _loading = false; });
+      setState(() {
+        _loading = false;
+      });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
+  }
+
+  Future<void> _openQRScanner() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => StudentQRScannerScreen(
+          onScan: (qrData) async {
+            await _handleQRData(qrData);
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleQRData(String qrData) async {
+    setState(() {
+      _isMarkingAttendance = true;
+    });
+
+    String feedback;
+    try {
+      // Assume QR contains classSessionId and token in a simple format, e.g.:
+      // { "classSessionId": "...", "token": "..." }
+      final Map<String, dynamic> parsed = _parseQR(qrData);
+      final classSessionId = parsed['classSessionId'];
+      final token = parsed['token'];
+
+      if (classSessionId == null || token == null) {
+        feedback = "Invalid QR code format.";
+      } else {
+        final result = await AttendanceService().markPresent(
+          classSessionId,
+          widget.user.uid,
+          token,
+        );
+        feedback = result == "Success"
+            ? "Attendance marked successfully!"
+            : result;
+        await _fetchDashboardData();
+      }
+    } catch (e) {
+      feedback = "Failed to mark attendance: $e";
+    }
+
+    if (mounted) {
+      setState(() {
+        _isMarkingAttendance = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(feedback)));
+    }
+  }
+
+  // Minimal parser for JSON or simple delimited QR codes
+  Map<String, dynamic> _parseQR(String qrData) {
+    try {
+      // Try parsing JSON
+      return Map<String, dynamic>.from(
+        qrData.contains('{')
+            ? (qrData.isNotEmpty
+            ? (qrData.startsWith('{')
+            ? (qrData.endsWith('}')
+            ? (qrData == '{}'
+            ? {}
+            : Map<String, dynamic>.from(
+          jsonDecode(qrData),
+        ))
+            : {})
+            : {})
+            : {})
+            : _parseDelimited(qrData),
+      );
+    } catch (_) {
+      // Try fallback
+      return _parseDelimited(qrData);
+    }
+  }
+
+  Map<String, dynamic> _parseDelimited(String qrData) {
+    // Fallback for e.g. "classSessionId:xyz;token:123456"
+    final parts = qrData.split(';');
+    final data = <String, dynamic>{};
+    for (final part in parts) {
+      final kv = part.split(':');
+      if (kv.length == 2) data[kv[0].trim()] = kv[1].trim();
+    }
+    return data;
   }
 
   @override
@@ -79,7 +178,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             tooltip: 'Logout',
             onPressed: () async {
               await AuthService().signOut();
-              // The AuthWrapper will automatically handle navigation
             },
           ),
         ],
@@ -101,6 +199,26 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 _buildStatCard('Activities', _activityCount, Colors.blue),
               ],
             ),
+            const SizedBox(height: 32),
+            // Move the button here!
+            ElevatedButton.icon(
+              onPressed: _isMarkingAttendance ? null : _openQRScanner,
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text("Scan QR to Mark Attendance"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            ),
+            if (_isMarkingAttendance)
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: LinearProgressIndicator(),
+              ),
             const SizedBox(height: 32),
             Text(
               'Recent Attendance',
@@ -125,9 +243,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                             : Colors.red,
                       ),
                       title: Text('Session: ${record.sessionId}'),
-                      subtitle: Text(
-                        'Status: ${record.status}',
-                      ),
+                      subtitle: Text('Status: ${record.status}'),
                       trailing: Text(
                         '${record.markedAt.toLocal()}'.split(' ')[0],
                       ),
