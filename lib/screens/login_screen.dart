@@ -55,10 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
               dashboard = StudentDashboardScreen(user: userDetails);
               break;
             case 'Lecturer':
-              dashboard = LecturerDashboardScreen(  user: userDetails);
+              dashboard = LecturerDashboardScreen(user: userDetails);
               break;
             case 'Admin':
-              dashboard = const AdminDashboardScreen();
+              dashboard = AdminDashboardScreen(user: userDetails);
               break;
             default:
               dashboard = const Scaffold(body: Center(child: Text('Unknown user role')));
