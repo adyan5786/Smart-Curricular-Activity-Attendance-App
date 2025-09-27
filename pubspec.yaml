@@ -37,6 +37,8 @@ dependencies:
   firebase_auth: ^6.1.0
   cloud_firestore: ^6.0.2
   cupertino_icons: ^1.0.8
+  qr_flutter: ^4.1.0        # For teachers to generate QR codes
+  mobile_scanner: ^7.1.2    # For students to scan QR codes
 
 dev_dependencies:
   flutter_test:

@@ -1,3 +1,4 @@
+// lib/screens/student_dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
@@ -53,8 +54,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        appBar: AppBar(title: const Text('Student Dashboard')),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_error != null) {
@@ -77,9 +79,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             tooltip: 'Logout',
             onPressed: () async {
               await AuthService().signOut();
-              if (mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-              }
+              // The AuthWrapper will automatically handle navigation
             },
           ),
         ],
@@ -103,7 +103,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             ),
             const SizedBox(height: 32),
             Text(
-              'Recent Attendance Records',
+              'Recent Attendance',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
@@ -114,19 +114,23 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 itemCount: _recentRecords.length,
                 itemBuilder: (context, idx) {
                   final record = _recentRecords[idx];
-                  return ListTile(
-                    leading: Icon(
-                      record.status == 'Present'
-                          ? Icons.check_circle
-                          : Icons.cancel,
-                      color: record.status == 'Present'
-                          ? Colors.green
-                          : Colors.red,
-                    ),
-                    title: Text('Session: ${record.sessionId}'),
-                    subtitle: Text(
-                      'Status: ${record.status}\n'
-                          'Marked at: ${record.markedAt}',
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        record.status == 'Present'
+                            ? Icons.check_circle
+                            : Icons.cancel,
+                        color: record.status == 'Present'
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                      title: Text('Session: ${record.sessionId}'),
+                      subtitle: Text(
+                        'Status: ${record.status}',
+                      ),
+                      trailing: Text(
+                        '${record.markedAt.toLocal()}'.split(' ')[0],
+                      ),
                     ),
                   );
                 },
@@ -140,7 +144,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
   Widget _buildStatCard(String title, int count, Color color) {
     return Card(
-      color: color.withOpacity(0.1),
+      color: color.withAlpha(26),
       child: SizedBox(
         width: 140,
         height: 100,

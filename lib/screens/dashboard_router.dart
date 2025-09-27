@@ -16,7 +16,7 @@ class DashboardRouter extends StatelessWidget {
       case 'Lecturer':
         return LecturerDashboardScreen(user: user);
       case 'Admin':
-        return const AdminDashboardScreen();
+        return AdminDashboardScreen(user: user);
       default:
         return Scaffold(
           body: Center(child: Text('Unknown role: ${user.role}')),
